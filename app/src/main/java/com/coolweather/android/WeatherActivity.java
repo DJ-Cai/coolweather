@@ -1,6 +1,9 @@
 package com.coolweather.android;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.content.SharedPreferences;
 import android.graphics.Color;
@@ -10,6 +13,7 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -43,7 +47,14 @@ public class WeatherActivity extends AppCompatActivity {
     private TextView comforText;
     private TextView carWashText;
     private TextView sportText;
+    //必应每日一图
     private ImageView bingPicImg;
+    //手动更新天气
+    public SwipeRefreshLayout swipeRefresh;
+    private String mWeatherId;
+    //滑动菜单
+    public DrawerLayout drawerLayout;
+    private Button navButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,20 +79,31 @@ public class WeatherActivity extends AppCompatActivity {
         comforText = findViewById(R.id.comfort_text);
         carWashText = findViewById(R.id.car_wash_text);
         sportText = findViewById(R.id.sport_text);
+
         bingPicImg = findViewById(R.id.bing_pic_img);
+
+        //手动刷新天气：获得SwipeRefefreshLayout实例 设置刷新进度条颜色
+        swipeRefresh = findViewById(R.id.swipe_refresh);
+        swipeRefresh.setColorSchemeResources(R.color.design_default_color_primary);
+
+        //滑动菜单
+        drawerLayout = findViewById(R.id.drawer_layout);
+        navButton = findViewById(R.id.nav_button);
+
         //尝试从本地缓存中读取天气数据
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         String weatherString = prefs.getString("weather",null);
         if(weatherString != null){
             //有缓存时直接解析天气数据
             Weather weather = Utility.handleWeatherResponse(weatherString);
+            mWeatherId = weather.basic.weatherId;
             showWeatherInfo(weather);
         }else{
             //无缓存时去服务器查询天气
-            String weatherId = getIntent().getStringExtra("weather_id");
+            mWeatherId = getIntent().getStringExtra("weather_id");
             //小细节：请求数据的时候将滚动条隐藏，因为空界面有滚动条很奇怪
             weatherLayout.setVisibility(View.INVISIBLE);
-            requestWeather(weatherId);
+            requestWeather(mWeatherId);
         }
         //加载比应的每日一图
         String bingPic = prefs.getString("bing_pic" , null);
@@ -90,6 +112,22 @@ public class WeatherActivity extends AppCompatActivity {
         }else{
             loadBingPic();
         }
+
+        //监听下拉刷新监听器
+        swipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                requestWeather(mWeatherId);
+            }
+        });
+
+        //监听按钮，然后转到滑动菜单
+        navButton.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                drawerLayout.openDrawer(GravityCompat.START);
+            }
+        });
     }
 
     /**
@@ -123,7 +161,7 @@ public class WeatherActivity extends AppCompatActivity {
      * 根据天气ID请求城市天气信息
      * @param weatherId
      */
-    private void requestWeather(final String weatherId) {
+    void requestWeather(final String weatherId) {
         //组装待发送请求的地址
         String weatherUrl = "http://guolin.tech/api/weather?cityid=" + weatherId + "&key=f4eb4e77181841988e342954befed971";
         //发送请求，写回调函数进行结果处理
@@ -135,6 +173,8 @@ public class WeatherActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         Toast.makeText(MyApplication.getContext(),"获取天气信息失败",Toast.LENGTH_SHORT).show();
+                        //刷新天气事件结束，隐藏刷新进度条
+                        swipeRefresh.setRefreshing(false);
                     }
                 });
             }
@@ -153,10 +193,14 @@ public class WeatherActivity extends AppCompatActivity {
                             SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(WeatherActivity.this).edit();
                             editor.putString("weahter",responseText);
                             editor.apply();
+                            //手动刷新天气
+                            mWeatherId = weather.basic.weatherId;
                             showWeatherInfo(weather);
                         }else{
                             Toast.makeText(WeatherActivity.this,"获取天气信息失败",Toast.LENGTH_SHORT).show();
                         }
+                        //刷新天气事件结束，隐藏刷新进度条
+                        swipeRefresh.setRefreshing(false);
                     }
                 });
             }
