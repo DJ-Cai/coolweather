@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--显示天气界面的当前天气信息布局，会引入到activity_weather.xml中-->
+<LinearLayout
+    xmlns:andorid = "http://schemas.android.com/apk/res/android"
+    andorid:orientation="vertical"
+    andorid:layout_width="match_parent"
+    andorid:layout_height="wrap_content"
+    andorid:layout_margin="15dp">
+
+<!--    显示当前气温-->
+    <TextView
+        andorid:id="@+id/degree_text"
+        andorid:layout_width="wrap_content"
+        andorid:layout_height="wrap_content"
+        andorid:layout_gravity="end"
+        andorid:textColor="#fff"
+        andorid:textSize="60sp"/>
+
+<!--    显示天气概况 -->
+    <TextView
+        andorid:id="@+id/weather_info_text"
+        andorid:layout_width="wrap_content"
+        andorid:layout_height="wrap_content"
+        andorid:layout_gravity="end"
+        andorid:textColor="#fff"
+        andorid:textSize="20sp"/>
+</LinearLayout>
